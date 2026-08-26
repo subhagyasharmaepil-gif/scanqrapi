@@ -14,7 +14,28 @@ const PLAY_STORE_URL =
   'https://play.google.com/store/apps/details?id=com.epil.teacherquiz&pcampaignid=web_share';
 
 // ------------------------------------
-// Health check
+// MODELS FOLDER
+// ------------------------------------
+// Your project should have:
+//
+// project/
+// ├── server.js
+// ├── package.json
+// └── models/
+//     ├── 1212612.glb
+//     ├── 1212612.jpg
+//     └── 1212612.png
+//
+// Files will be accessible like:
+// https://scanqrapi.onrender.com/models/1212612.glb
+//
+const modelsPath = path.join(__dirname, 'models');
+
+app.use('/models', express.static(modelsPath));
+
+// ------------------------------------
+// HEALTH CHECK
+// GET /
 // ------------------------------------
 app.get('/', (req, res) => {
   res.json({
@@ -25,7 +46,7 @@ app.get('/', (req, res) => {
 
 // ------------------------------------
 // QR URL
-// https://ever.com/q/1212612
+// GET /q/1212612
 // ------------------------------------
 app.get('/q/:id', (req, res) => {
   const { id } = req.params;
@@ -38,8 +59,8 @@ app.get('/q/:id', (req, res) => {
     });
   }
 
-  // Normal phone camera/browser
-  return res.redirect(PLAY_STORE_URL);
+  // Redirect to Play Store
+  return res.redirect(302, PLAY_STORE_URL);
 });
 
 // ------------------------------------
@@ -59,27 +80,38 @@ app.get('/model/:id', (req, res) => {
 
   const files = {};
 
-  // File paths
-  const glbPath = path.join(__dirname, 'models', `${id}.glb`);
-  const jpgPath = path.join(__dirname, 'models', `${id}.jpg`);
-  const pngPath = path.join(__dirname, 'models', `${id}.png`);
+  // File paths on Render
+  const glbPath = path.join(modelsPath, `${id}.glb`);
+  const jpgPath = path.join(modelsPath, `${id}.jpg`);
+  const pngPath = path.join(modelsPath, `${id}.png`);
 
+  // ------------------------------------
   // Check GLB
+  // ------------------------------------
   if (fs.existsSync(glbPath)) {
-    files.modelUrl = `https://api.ever.com/${id}.glb`;
+    files.modelUrl =
+      `https://scanqrapi.onrender.com/models/${id}.glb`;
   }
 
+  // ------------------------------------
   // Check JPG
+  // ------------------------------------
   if (fs.existsSync(jpgPath)) {
-    files.jpgUrl = `https://api.ever.com/${id}.jpg`;
+    files.jpgUrl =
+      `https://scanqrapi.onrender.com/models/${id}.jpg`;
   }
 
+  // ------------------------------------
   // Check PNG
+  // ------------------------------------
   if (fs.existsSync(pngPath)) {
-    files.pngUrl = `https://api.ever.com/${id}.png`;
+    files.pngUrl =
+      `https://scanqrapi.onrender.com/models/${id}.png`;
   }
 
+  // ------------------------------------
   // No files found
+  // ------------------------------------
   if (Object.keys(files).length === 0) {
     return res.status(404).json({
       success: false,
@@ -88,7 +120,9 @@ app.get('/model/:id', (req, res) => {
     });
   }
 
-  // Return available files
+  // ------------------------------------
+  // Response
+  // ------------------------------------
   return res.json({
     success: true,
     id: id,
@@ -97,8 +131,9 @@ app.get('/model/:id', (req, res) => {
 });
 
 // ------------------------------------
-// Start server
+// START SERVER
 // ------------------------------------
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Ever API running on port ${PORT}`);
+  console.log(`Models folder: ${modelsPath}`);
 });
