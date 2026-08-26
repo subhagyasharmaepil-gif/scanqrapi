@@ -9,7 +9,6 @@ app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
-
 const BASE_URL = 'https://scanqrapi.onrender.com';
 
 // ==================================================
@@ -17,7 +16,7 @@ const BASE_URL = 'https://scanqrapi.onrender.com';
 // ==================================================
 
 const ANDROID_PLAY_STORE_URL =
-  'https://play.google.com/store/apps/details?id=com.epil.teacherquiz&pcampaignid=web_share';
+  'https://play.google.com/store/apps/details?id=com.epil.teacherquiz';
 
 const IOS_APP_STORE_URL =
   'https://apps.apple.com/in/app/evergreen-e-learning/id1488785145';
@@ -40,51 +39,42 @@ const aasaPath = path.join(
 );
 
 // ==================================================
-// DEBUG PATHS
+// STARTUP CHECK
 // ==================================================
 
 console.log('====================================');
-console.log('SERVER PATHS');
+console.log('EVER 3D API');
 console.log('====================================');
+
 console.log('Current directory:', __dirname);
-console.log('Models path:', modelsPath);
-console.log('Well-known path:', wellKnownPath);
-console.log('assetlinks path:', assetLinksPath);
-console.log('AASA path:', aasaPath);
+console.log('Models:', modelsPath);
+console.log('Well-known:', wellKnownPath);
+
 console.log(
-  'Models folder exists:',
+  'Models folder:',
   fs.existsSync(modelsPath)
 );
+
 console.log(
-  'Well-known folder exists:',
+  'Well-known folder:',
   fs.existsSync(wellKnownPath)
 );
+
 console.log(
-  'assetlinks.json exists:',
+  'assetlinks.json:',
   fs.existsSync(assetLinksPath)
 );
+
 console.log(
-  'apple-app-site-association exists:',
+  'apple-app-site-association:',
   fs.existsSync(aasaPath)
 );
+
 console.log('====================================');
 
 // ==================================================
 // STATIC MODEL FILES
 // ==================================================
-//
-// models/
-// ├── 360view.jpg
-// ├── 360view.png
-// ├── 1212612.glb
-// ├── 1212612.jpg
-// └── 1212612.png
-//
-// URLs:
-//
-// https://scanqrapi.onrender.com/models/360view.jpg
-// https://scanqrapi.onrender.com/models/1212612.glb
-//
 
 app.use(
   '/models',
@@ -94,13 +84,6 @@ app.use(
 // ==================================================
 // WELL-KNOWN
 // ==================================================
-//
-// Android:
-// /.well-known/assetlinks.json
-//
-// iOS:
-// /.well-known/apple-app-site-association
-//
 
 app.use(
   '/.well-known',
@@ -151,12 +134,7 @@ app.get('/', (req, res) => {
 });
 
 // ==================================================
-// ANDROID APP LINKS
-// ==================================================
-//
-// GET:
-// /.well-known/assetlinks.json
-//
+// ANDROID ASSET LINKS
 // ==================================================
 
 app.get(
@@ -166,7 +144,6 @@ app.get(
       return res.status(404).json({
         success: false,
         message: 'assetlinks.json not found',
-        path: assetLinksPath,
       });
     }
 
@@ -180,12 +157,7 @@ app.get(
 );
 
 // ==================================================
-// IOS UNIVERSAL LINKS
-// ==================================================
-//
-// GET:
-// /.well-known/apple-app-site-association
-//
+// IOS AASA
 // ==================================================
 
 app.get(
@@ -196,7 +168,6 @@ app.get(
         success: false,
         message:
           'apple-app-site-association not found',
-        path: aasaPath,
       });
     }
 
@@ -210,109 +181,153 @@ app.get(
 );
 
 // ==================================================
-// QR LINK
-// ==================================================
+// QR DEEP LINK
 //
-// QR:
+// Example:
+//
+// https://scanqrapi.onrender.com/q/360views
+//
+// OR:
 //
 // https://scanqrapi.onrender.com/q/1212612
-//
-// Installed app:
-//      iOS / Android intercepts the link
-//
-// App not installed:
-//      Browser reaches this endpoint
-//      and redirects to the store
 //
 // ==================================================
 
 app.get('/q/:id', (req, res) => {
   const { id } = req.params;
 
-  // ----------------------------------------------
-  // Validate ID
-  // ----------------------------------------------
-
-  if (!/^\d+$/.test(id)) {
-    return redirectToStore(req, res);
-  }
+  console.log(
+    '===================================='
+  );
 
   console.log(
-    `QR request received for ID: ${id}`
+    'QR REQUEST:',
+    id
   );
 
-  // ----------------------------------------------
-  // Check model files
-  // ----------------------------------------------
-
-  const glbPath = path.join(
-    modelsPath,
-    `${id}.glb`
+  console.log(
+    'User-Agent:',
+    req.headers['user-agent']
   );
 
-  const jpgPath = path.join(
-    modelsPath,
-    `${id}.jpg`
+  console.log(
+    '===================================='
   );
 
-  const pngPath = path.join(
-    modelsPath,
-    `${id}.png`
-  );
+  // ==================================================
+  // ALLOWED QR IDS
+  // ==================================================
 
-  const hasGlb =
-    fs.existsSync(glbPath);
+  const is360View =
+    id === '360views';
 
-  const hasJpg =
-    fs.existsSync(jpgPath);
+  const isNumericId =
+    /^\d+$/.test(id);
 
-  const hasPng =
-    fs.existsSync(pngPath);
+  // Invalid QR
+  if (!is360View && !isNumericId) {
+    console.log(
+      'Invalid QR ID'
+    );
 
-  console.log({
-    id,
-    hasGlb,
-    hasJpg,
-    hasPng,
-  });
-
-  // ----------------------------------------------
-  // No model
-  // ----------------------------------------------
-
-  if (!hasGlb && !hasJpg && !hasPng) {
     return redirectToStore(req, res);
   }
 
-  // ----------------------------------------------
-  // App Links / Universal Links
-  //
-  // If the app is installed and correctly
-  // configured, the OS opens the app before
-  // this browser redirect happens.
-  //
-  // If the app isn't installed, this fallback
-  // sends the user to the correct store.
-  // ----------------------------------------------
+  // ==================================================
+  // 360 VIEW
+  // ==================================================
+
+  if (is360View) {
+    const imagePath = path.join(
+      modelsPath,
+      '360view.jpg'
+    );
+
+    if (!fs.existsSync(imagePath)) {
+      console.log(
+        '360view.jpg not found'
+      );
+
+      return redirectToStore(req, res);
+    }
+
+    console.log(
+      '360 image exists'
+    );
+
+    // IMPORTANT:
+    //
+    // Do NOT redirect to the image here.
+    //
+    // iOS Universal Links / Android App Links
+    // should intercept /q/360views when the
+    // application is installed.
+    //
+    // If application is NOT installed,
+    // browser reaches this route and gets
+    // redirected to the correct store.
+
+    return redirectToStore(req, res);
+  }
+
+  // ==================================================
+  // NUMERIC MODEL
+  // ==================================================
+
+  if (isNumericId) {
+    const glbPath = path.join(
+      modelsPath,
+      `${id}.glb`
+    );
+
+    const jpgPath = path.join(
+      modelsPath,
+      `${id}.jpg`
+    );
+
+    const pngPath = path.join(
+      modelsPath,
+      `${id}.png`
+    );
+
+    const hasGlb =
+      fs.existsSync(glbPath);
+
+    const hasJpg =
+      fs.existsSync(jpgPath);
+
+    const hasPng =
+      fs.existsSync(pngPath);
+
+    console.log({
+      id,
+      hasGlb,
+      hasJpg,
+      hasPng,
+    });
+
+    if (
+      !hasGlb &&
+      !hasJpg &&
+      !hasPng
+    ) {
+      return redirectToStore(req, res);
+    }
+
+    return redirectToStore(req, res);
+  }
 
   return redirectToStore(req, res);
 });
 
 // ==================================================
 // MODEL API
-// ==================================================
 //
-// GET:
-// https://scanqrapi.onrender.com/model/1212612
-//
+// GET /model/1212612
 // ==================================================
 
 app.get('/model/:id', (req, res) => {
   const { id } = req.params;
-
-  // ----------------------------------------------
-  // Validate ID
-  // ----------------------------------------------
 
   if (!/^\d+$/.test(id)) {
     return res.status(400).json({
@@ -323,9 +338,9 @@ app.get('/model/:id', (req, res) => {
 
   const files = {};
 
-  // ----------------------------------------------
+  // ==================================================
   // GLB
-  // ----------------------------------------------
+  // ==================================================
 
   const glbPath = path.join(
     modelsPath,
@@ -337,9 +352,9 @@ app.get('/model/:id', (req, res) => {
       `${BASE_URL}/models/${id}.glb`;
   }
 
-  // ----------------------------------------------
+  // ==================================================
   // JPG
-  // ----------------------------------------------
+  // ==================================================
 
   const jpgPath = path.join(
     modelsPath,
@@ -351,9 +366,9 @@ app.get('/model/:id', (req, res) => {
       `${BASE_URL}/models/${id}.jpg`;
   }
 
-  // ----------------------------------------------
+  // ==================================================
   // PNG
-  // ----------------------------------------------
+  // ==================================================
 
   const pngPath = path.join(
     modelsPath,
@@ -365,9 +380,9 @@ app.get('/model/:id', (req, res) => {
       `${BASE_URL}/models/${id}.png`;
   }
 
-  // ----------------------------------------------
-  // 360 IMAGE
-  // ----------------------------------------------
+  // ==================================================
+  // 360 JPG
+  // ==================================================
 
   const view360JpgPath = path.join(
     modelsPath,
@@ -379,9 +394,9 @@ app.get('/model/:id', (req, res) => {
       `${BASE_URL}/models/360view.jpg`;
   }
 
-  // ----------------------------------------------
+  // ==================================================
   // 360 PNG
-  // ----------------------------------------------
+  // ==================================================
 
   const view360PngPath = path.join(
     modelsPath,
@@ -393,27 +408,28 @@ app.get('/model/:id', (req, res) => {
       `${BASE_URL}/models/360view.png`;
   }
 
-  // ----------------------------------------------
+  // ==================================================
   // NO FILES
-  // ----------------------------------------------
+  // ==================================================
 
   if (
     Object.keys(files).length === 0
   ) {
     return res.status(404).json({
       success: false,
-      message: 'No files found for this model',
-      id: id,
+      message:
+        'No files found for this model',
+      id,
     });
   }
 
-  // ----------------------------------------------
+  // ==================================================
   // RESPONSE
-  // ----------------------------------------------
+  // ==================================================
 
   return res.json({
     success: true,
-    id: id,
+    id,
     ...files,
   });
 });
@@ -427,55 +443,52 @@ function redirectToStore(req, res) {
     req.headers['user-agent'] || '';
 
   const isIOS =
-    /iPhone|iPad|iPod/i.test(userAgent);
-
-  const isAndroid =
-    /Android/i.test(userAgent);
-
-  console.log(
-    'User Agent:',
-    userAgent
-  );
-
-  // ----------------------------------------------
-  // iOS
-  // ----------------------------------------------
-
-  if (isIOS) {
-    console.log(
-      'Redirecting to Apple App Store'
+    /iPhone|iPad|iPod/i.test(
+      userAgent
     );
 
+  const isAndroid =
+    /Android/i.test(
+      userAgent
+    );
+
+  console.log(
+    'Redirecting:',
+    {
+      isIOS,
+      isAndroid,
+    }
+  );
+
+  // ==================================================
+  // IOS
+  // ==================================================
+
+  if (isIOS) {
     return res.redirect(
       302,
       IOS_APP_STORE_URL
     );
   }
 
-  // ----------------------------------------------
-  // Android
-  // ----------------------------------------------
+  // ==================================================
+  // ANDROID
+  // ==================================================
 
   if (isAndroid) {
-    console.log(
-      'Redirecting to Google Play Store'
-    );
-
     return res.redirect(
       302,
       ANDROID_PLAY_STORE_URL
     );
   }
 
-  // ----------------------------------------------
-  // Desktop / unknown
-  //
-  // Default to Android Play Store
-  // ----------------------------------------------
+  // ==================================================
+  // DESKTOP
+  // ==================================================
 
   return res.redirect(
     302,
-    ANDROID_PLAY_STORE_URL
+    IOS_APP_STORE_URL
   );
 }
 
@@ -483,13 +496,15 @@ function redirectToStore(req, res) {
 // 404
 // ==================================================
 
-app.use((req, res) => {
-  return res.status(404).json({
-    success: false,
-    message: 'Route not found',
-    path: req.originalUrl,
-  });
-});
+app.use(
+  (req, res) => {
+    return res.status(404).json({
+      success: false,
+      message: 'Route not found',
+      path: req.originalUrl,
+    });
+  }
+);
 
 // ==================================================
 // START SERVER
@@ -513,14 +528,6 @@ app.listen(
 
     console.log(
       `Base URL: ${BASE_URL}`
-    );
-
-    console.log(
-      `Models: ${modelsPath}`
-    );
-
-    console.log(
-      `Well Known: ${wellKnownPath}`
     );
 
     console.log(
