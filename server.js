@@ -30,14 +30,13 @@ const modelsPath = path.join(__dirname, 'models');
 const wellKnownPath = path.join(__dirname, '.well-known');
 
 // ==================================================
-// STATIC MODEL FILES
+// STATIC MODELS
 // ==================================================
 
 app.use('/models', express.static(modelsPath));
 
 // ==================================================
 // HEALTH CHECK
-// GET /
 // ==================================================
 
 app.get('/', (req, res) => {
@@ -49,7 +48,7 @@ app.get('/', (req, res) => {
 
 // ==================================================
 // ANDROID APP LINKS
-// GET /.well-known/assetlinks.json
+// /.well-known/assetlinks.json
 // ==================================================
 
 app.get('/.well-known/assetlinks.json', (req, res) => {
@@ -72,7 +71,7 @@ app.get('/.well-known/assetlinks.json', (req, res) => {
 
 // ==================================================
 // IOS UNIVERSAL LINKS
-// GET /.well-known/apple-app-site-association
+// /.well-known/apple-app-site-association
 // ==================================================
 
 app.get(
@@ -97,95 +96,50 @@ app.get(
 );
 
 // ==================================================
-// QR ROUTE
-// GET /q/1212612
+// QR LINK
+// /q/1212612
 // ==================================================
 
 app.get('/q/:id', (req, res) => {
   const { id } = req.params;
+
+  // Only numeric IDs
+  if (!/^\d+$/.test(id)) {
+    const userAgent =
+      req.headers['user-agent'] || '';
+
+    const isIOS =
+      /iPhone|iPad|iPod/i.test(userAgent);
+
+    if (isIOS) {
+      return res.redirect(
+        302,
+        IOS_APP_STORE_URL
+      );
+    }
+
+    return res.redirect(
+      302,
+      ANDROID_PLAY_STORE_URL
+    );
+  }
+
+  // ----------------------------------------------
+  // IMPORTANT:
+  //
+  // Android App Links / iOS Universal Links
+  // will intercept this URL when the app is
+  // installed and properly associated.
+  //
+  // If the app is NOT installed, this request
+  // reaches the server and redirects to the store.
+  // ----------------------------------------------
 
   const userAgent =
     req.headers['user-agent'] || '';
 
   const isIOS =
     /iPhone|iPad|iPod/i.test(userAgent);
-
-  const isAndroid =
-    /Android/i.test(userAgent);
-
-  // ==================================================
-  // INVALID QR ID
-  // ==================================================
-
-  if (!/^\d+$/.test(id)) {
-    if (isIOS) {
-      return res.redirect(
-        302,
-        IOS_APP_STORE_URL
-      );
-    }
-
-    return res.redirect(
-      302,
-      ANDROID_PLAY_STORE_URL
-    );
-  }
-
-  // ==================================================
-  // CHECK MODEL FILES
-  // ==================================================
-
-  const glbPath = path.join(
-    modelsPath,
-    `${id}.glb`
-  );
-
-  const jpgPath = path.join(
-    modelsPath,
-    `${id}.jpg`
-  );
-
-  const pngPath = path.join(
-    modelsPath,
-    `${id}.png`
-  );
-
-  const hasGlb =
-    fs.existsSync(glbPath);
-
-  const hasJpg =
-    fs.existsSync(jpgPath);
-
-  const hasPng =
-    fs.existsSync(pngPath);
-
-  // ==================================================
-  // MODEL DOES NOT EXIST
-  // ==================================================
-
-  if (!hasGlb && !hasJpg && !hasPng) {
-    if (isIOS) {
-      return res.redirect(
-        302,
-        IOS_APP_STORE_URL
-      );
-    }
-
-    return res.redirect(
-      302,
-      ANDROID_PLAY_STORE_URL
-    );
-  }
-
-  // ==================================================
-  // VALID MODEL
-  //
-  // Android App Links / iOS Universal Links
-  // should open the installed app.
-  //
-  // If the app isn't installed, browser reaches
-  // this fallback and goes to the correct store.
-  // ==================================================
 
   if (isIOS) {
     return res.redirect(
@@ -202,16 +156,13 @@ app.get('/q/:id', (req, res) => {
 
 // ==================================================
 // MODEL API
-// GET /model/1212612
+// /model/1212612
 // ==================================================
 
 app.get('/model/:id', (req, res) => {
   const { id } = req.params;
 
-  // ==================================================
-  // VALIDATE ID
-  // ==================================================
-
+  // Validate ID
   if (!/^\d+$/.test(id)) {
     return res.status(400).json({
       success: false,
@@ -221,9 +172,9 @@ app.get('/model/:id', (req, res) => {
 
   const files = {};
 
-  // ==================================================
-  // FILE PATHS
-  // ==================================================
+  // ----------------------------------------------
+  // File paths
+  // ----------------------------------------------
 
   const glbPath = path.join(
     modelsPath,
@@ -240,36 +191,36 @@ app.get('/model/:id', (req, res) => {
     `${id}.png`
   );
 
-  // ==================================================
+  // ----------------------------------------------
   // GLB
-  // ==================================================
+  // ----------------------------------------------
 
   if (fs.existsSync(glbPath)) {
     files.modelUrl =
       `${BASE_URL}/models/${id}.glb`;
   }
 
-  // ==================================================
+  // ----------------------------------------------
   // JPG
-  // ==================================================
+  // ----------------------------------------------
 
   if (fs.existsSync(jpgPath)) {
     files.jpgUrl =
       `${BASE_URL}/models/${id}.jpg`;
   }
 
-  // ==================================================
+  // ----------------------------------------------
   // PNG
-  // ==================================================
+  // ----------------------------------------------
 
   if (fs.existsSync(pngPath)) {
     files.pngUrl =
       `${BASE_URL}/models/${id}.png`;
   }
 
-  // ==================================================
-  // NO FILES
-  // ==================================================
+  // ----------------------------------------------
+  // No files
+  // ----------------------------------------------
 
   if (Object.keys(files).length === 0) {
     return res.status(404).json({
@@ -279,9 +230,9 @@ app.get('/model/:id', (req, res) => {
     });
   }
 
-  // ==================================================
-  // RESPONSE
-  // ==================================================
+  // ----------------------------------------------
+  // Response
+  // ----------------------------------------------
 
   return res.json({
     success: true,
