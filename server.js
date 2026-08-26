@@ -10,45 +10,34 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
-// ==================================================
-// CONFIG
-// ==================================================
-
 const BASE_URL = 'https://scanqrapi.onrender.com';
 
-const PLAY_STORE_URL =
+// ==================================================
+// STORE LINKS
+// ==================================================
+
+const ANDROID_PLAY_STORE_URL =
   'https://play.google.com/store/apps/details?id=com.epil.teacherquiz&pcampaignid=web_share';
+
+const IOS_APP_STORE_URL =
+  'https://apps.apple.com/in/app/evergreen-e-learning/id1488785145';
 
 // ==================================================
 // PATHS
 // ==================================================
 
 const modelsPath = path.join(__dirname, 'models');
-
 const wellKnownPath = path.join(__dirname, '.well-known');
 
 // ==================================================
 // STATIC MODEL FILES
 // ==================================================
-//
-// Files inside:
-//
-// models/
-//   1212612.glb
-//   1212612.jpg
-//   1212612.png
-//
-// Will be available at:
-//
-// /models/1212612.glb
-// /models/1212612.jpg
-// /models/1212612.png
-//
 
 app.use('/models', express.static(modelsPath));
 
 // ==================================================
 // HEALTH CHECK
+// GET /
 // ==================================================
 
 app.get('/', (req, res) => {
@@ -60,12 +49,8 @@ app.get('/', (req, res) => {
 
 // ==================================================
 // ANDROID APP LINKS
+// GET /.well-known/assetlinks.json
 // ==================================================
-//
-// URL:
-//
-// https://scanqrapi.onrender.com/.well-known/assetlinks.json
-//
 
 app.get('/.well-known/assetlinks.json', (req, res) => {
   const filePath = path.join(
@@ -87,12 +72,8 @@ app.get('/.well-known/assetlinks.json', (req, res) => {
 
 // ==================================================
 // IOS UNIVERSAL LINKS
+// GET /.well-known/apple-app-site-association
 // ==================================================
-//
-// URL:
-//
-// https://scanqrapi.onrender.com/.well-known/apple-app-site-association
-//
 
 app.get(
   '/.well-known/apple-app-site-association',
@@ -116,35 +97,43 @@ app.get(
 );
 
 // ==================================================
-// QR URL
+// QR ROUTE
+// GET /q/1212612
 // ==================================================
-//
-// Example:
-//
-// https://scanqrapi.onrender.com/q/1212612
-//
-// App installed:
-// Android App Links / iOS Universal Links
-// → Flutter app
-//
-// App not installed:
-// → Play Store
-//
 
 app.get('/q/:id', (req, res) => {
   const { id } = req.params;
 
-  // ------------------------------------------------
-  // Invalid ID
-  // ------------------------------------------------
+  const userAgent =
+    req.headers['user-agent'] || '';
+
+  const isIOS =
+    /iPhone|iPad|iPod/i.test(userAgent);
+
+  const isAndroid =
+    /Android/i.test(userAgent);
+
+  // ==================================================
+  // INVALID QR ID
+  // ==================================================
 
   if (!/^\d+$/.test(id)) {
-    return res.redirect(302, PLAY_STORE_URL);
+    if (isIOS) {
+      return res.redirect(
+        302,
+        IOS_APP_STORE_URL
+      );
+    }
+
+    return res.redirect(
+      302,
+      ANDROID_PLAY_STORE_URL
+    );
   }
 
-  // ------------------------------------------------
-  // Check whether model files exist
-  // ------------------------------------------------
+  // ==================================================
+  // CHECK MODEL FILES
+  // ==================================================
 
   const glbPath = path.join(
     modelsPath,
@@ -161,59 +150,67 @@ app.get('/q/:id', (req, res) => {
     `${id}.png`
   );
 
-  const hasGlb = fs.existsSync(glbPath);
-  const hasJpg = fs.existsSync(jpgPath);
-  const hasPng = fs.existsSync(pngPath);
+  const hasGlb =
+    fs.existsSync(glbPath);
 
-  // ------------------------------------------------
-  // No files
-  // ------------------------------------------------
+  const hasJpg =
+    fs.existsSync(jpgPath);
+
+  const hasPng =
+    fs.existsSync(pngPath);
+
+  // ==================================================
+  // MODEL DOES NOT EXIST
+  // ==================================================
 
   if (!hasGlb && !hasJpg && !hasPng) {
-    return res.redirect(302, PLAY_STORE_URL);
+    if (isIOS) {
+      return res.redirect(
+        302,
+        IOS_APP_STORE_URL
+      );
+    }
+
+    return res.redirect(
+      302,
+      ANDROID_PLAY_STORE_URL
+    );
   }
 
-  // ------------------------------------------------
-  // Valid QR
-  // ------------------------------------------------
+  // ==================================================
+  // VALID MODEL
   //
-  // If app is installed:
+  // Android App Links / iOS Universal Links
+  // should open the installed app.
   //
-  // Android/iOS handles the Universal/App Link.
-  //
-  // If app is not installed:
-  //
-  // Browser reaches this fallback → Play Store.
-  //
+  // If the app isn't installed, browser reaches
+  // this fallback and goes to the correct store.
+  // ==================================================
 
-  return res.redirect(302, PLAY_STORE_URL);
+  if (isIOS) {
+    return res.redirect(
+      302,
+      IOS_APP_STORE_URL
+    );
+  }
+
+  return res.redirect(
+    302,
+    ANDROID_PLAY_STORE_URL
+  );
 });
 
 // ==================================================
 // MODEL API
+// GET /model/1212612
 // ==================================================
-//
-// GET:
-//
-// /model/1212612
-//
-// Response:
-//
-// {
-//   success: true,
-//   id: "1212612",
-//   modelUrl: "...",
-//   jpgUrl: "...",
-//   pngUrl: "..."
-// }
-//
 
 app.get('/model/:id', (req, res) => {
   const { id } = req.params;
 
-  // ------------------------------------------------
-  // Validate ID
-  // ------------------------------------------------
+  // ==================================================
+  // VALIDATE ID
+  // ==================================================
 
   if (!/^\d+$/.test(id)) {
     return res.status(400).json({
@@ -224,9 +221,9 @@ app.get('/model/:id', (req, res) => {
 
   const files = {};
 
-  // ------------------------------------------------
-  // File paths
-  // ------------------------------------------------
+  // ==================================================
+  // FILE PATHS
+  // ==================================================
 
   const glbPath = path.join(
     modelsPath,
@@ -243,36 +240,36 @@ app.get('/model/:id', (req, res) => {
     `${id}.png`
   );
 
-  // ------------------------------------------------
+  // ==================================================
   // GLB
-  // ------------------------------------------------
+  // ==================================================
 
   if (fs.existsSync(glbPath)) {
     files.modelUrl =
       `${BASE_URL}/models/${id}.glb`;
   }
 
-  // ------------------------------------------------
+  // ==================================================
   // JPG
-  // ------------------------------------------------
+  // ==================================================
 
   if (fs.existsSync(jpgPath)) {
     files.jpgUrl =
       `${BASE_URL}/models/${id}.jpg`;
   }
 
-  // ------------------------------------------------
+  // ==================================================
   // PNG
-  // ------------------------------------------------
+  // ==================================================
 
   if (fs.existsSync(pngPath)) {
     files.pngUrl =
       `${BASE_URL}/models/${id}.png`;
   }
 
-  // ------------------------------------------------
-  // No files found
-  // ------------------------------------------------
+  // ==================================================
+  // NO FILES
+  // ==================================================
 
   if (Object.keys(files).length === 0) {
     return res.status(404).json({
@@ -282,9 +279,9 @@ app.get('/model/:id', (req, res) => {
     });
   }
 
-  // ------------------------------------------------
-  // Return response
-  // ------------------------------------------------
+  // ==================================================
+  // RESPONSE
+  // ==================================================
 
   return res.json({
     success: true,
@@ -294,7 +291,7 @@ app.get('/model/:id', (req, res) => {
 });
 
 // ==================================================
-// 404 HANDLER
+// 404
 // ==================================================
 
 app.use((req, res) => {
@@ -313,6 +310,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('====================================');
   console.log('Ever 3D API started');
   console.log(`Port: ${PORT}`);
+  console.log(`Base URL: ${BASE_URL}`);
   console.log(`Models: ${modelsPath}`);
   console.log(`Well Known: ${wellKnownPath}`);
   console.log('====================================');
