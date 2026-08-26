@@ -7,8 +7,9 @@
         "namespace": "android_app",
         "package_name": "com.epil.teacherquiz",
         "sha256_cert_fingerprints": [
-          "YOUR_SHA256_FINGERPRINT"
-        ]
+        "88:1C:1C:03:CE:89:E7:D1:8A:86:86:E3:80:B6:66:57:42:BD:B4:0B:00:C3:73:14:6C:39:C3:8E:EE:26:06:1B",
+        "F5:36:5F:AE:FC:D1:9D:86:E9:3A:C8:A9:2B:14:9B:BD:89:C4:EA:FD:D3:23:5B:F2:C9:A2:1D:5F:D8:AB:CA:7C"
+      ]
       }
     }
   ]
