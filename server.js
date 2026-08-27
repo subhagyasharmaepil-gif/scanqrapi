@@ -115,9 +115,9 @@ app.get('/', (req, res) => {
 
     files: {
       //
-     // modelsFolder: fs.existsSync(
-       // modelsPath
-     // ),
+      modelsFolder: fs.existsSync(
+        modelsPath
+      ),
 
       wellKnownFolder: fs.existsSync(
         wellKnownPath
