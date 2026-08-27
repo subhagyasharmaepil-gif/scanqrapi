@@ -325,7 +325,7 @@ app.get('/q/:id', (req, res) => {
 //
 // GET /model/1212612
 // ==================================================
-
+/*
 app.get('/model/:id', (req, res) => {
   const { id } = req.params;
 
@@ -432,7 +432,7 @@ app.get('/model/:id', (req, res) => {
     id,
     ...files,
   });
-});
+}); */
 
 // ==================================================
 // STORE REDIRECT
