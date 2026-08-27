@@ -213,7 +213,7 @@ app.get('/q/:id', (req, res) => {
   console.log(
     '===================================='
   );
-
+/*
   // ==================================================
   // ALLOWED QR IDS
   // ==================================================
@@ -268,12 +268,12 @@ app.get('/q/:id', (req, res) => {
     // redirected to the correct store.
 
     return redirectToStore(req, res);
-  }
+  } */
 
   // ==================================================
   // NUMERIC MODEL
   // ==================================================
-
+/*
   if (isNumericId) {
     const glbPath = path.join(
       modelsPath,
@@ -315,7 +315,7 @@ app.get('/q/:id', (req, res) => {
     }
 
     return redirectToStore(req, res);
-  }
+  } */
 
   return redirectToStore(req, res);
 });
