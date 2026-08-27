@@ -8,26 +8,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ==================================================
-// SERVER
-// ==================================================
-
 const PORT = process.env.PORT || 3000;
 
 const BASE_URL =
   'https://scanqrapi.onrender.com';
-
-// ==================================================
-// EVERGREEN FILE BASE URL
-//
-// Example:
-//
-// https://evergreenpublications.in/Downloads/demo/360view.jpg
-//
-// ==================================================
-
-const FILE_BASE_URL =
-  'https://evergreenpublications.in/Downloads/demo';
 
 // ==================================================
 // STORE LINKS
@@ -44,10 +28,7 @@ const IOS_APP_STORE_URL =
 // ==================================================
 
 const wellKnownPath =
-  path.join(
-    __dirname,
-    '.well-known'
-  );
+  path.join(__dirname, '.well-known');
 
 const assetLinksPath =
   path.join(
@@ -65,17 +46,9 @@ const aasaPath =
 // STARTUP
 // ==================================================
 
-console.log(
-  '===================================='
-);
-
-console.log(
-  'EVER 3D API'
-);
-
-console.log(
-  '===================================='
-);
+console.log('====================================');
+console.log('EVER 3D API');
+console.log('====================================');
 
 console.log(
   'Current directory:',
@@ -83,82 +56,42 @@ console.log(
 );
 
 console.log(
-  'Port:',
-  PORT
-);
-
-console.log(
-  'Base URL:',
-  BASE_URL
-);
-
-console.log(
-  'File Base URL:',
-  FILE_BASE_URL
-);
-
-console.log(
   'Well-known folder:',
-  fs.existsSync(
-    wellKnownPath
-  )
+  wellKnownPath
 );
 
 console.log(
-  'assetlinks.json:',
-  fs.existsSync(
-    assetLinksPath
-  )
+  'Well-known exists:',
+  fs.existsSync(wellKnownPath)
 );
 
 console.log(
-  'apple-app-site-association:',
-  fs.existsSync(
-    aasaPath
-  )
+  'assetlinks.json exists:',
+  fs.existsSync(assetLinksPath)
 );
 
 console.log(
-  'Models folder: NOT USED'
+  'apple-app-site-association exists:',
+  fs.existsSync(aasaPath)
 );
 
-console.log(
-  '===================================='
-);
+console.log('====================================');
 
 // ==================================================
 // HEALTH CHECK
 // ==================================================
 
-app.get(
-  '/',
-  (req, res) => {
-
-    return res.json({
-      success: true,
-
-      message:
-        'Ever 3D API is running',
-
-      baseUrl:
-        BASE_URL,
-
-      fileBaseUrl:
-        FILE_BASE_URL,
-
-      models:
-        'NOT USED',
-    });
-  }
-);
+app.get('/', (req, res) => {
+  return res.json({
+    success: true,
+    message: 'Ever 3D API is running',
+  });
+});
 
 // ==================================================
 // ANDROID APP LINKS
 //
-// GET:
-//
-// /.well-known/assetlinks.json
-//
+// https://scanqrapi.onrender.com/.well-known/assetlinks.json
 // ==================================================
 
 app.get(
@@ -169,15 +102,9 @@ app.get(
       'Android assetlinks requested'
     );
 
-    if (
-      !fs.existsSync(
-        assetLinksPath
-      )
-    ) {
-
+    if (!fs.existsSync(assetLinksPath)) {
       return res.status(404).json({
         success: false,
-
         message:
           'assetlinks.json not found',
       });
@@ -197,10 +124,7 @@ app.get(
 // ==================================================
 // IOS UNIVERSAL LINKS
 //
-// GET:
-//
-// /.well-known/apple-app-site-association
-//
+// https://scanqrapi.onrender.com/.well-known/apple-app-site-association
 // ==================================================
 
 app.get(
@@ -211,15 +135,9 @@ app.get(
       'iOS AASA requested'
     );
 
-    if (
-      !fs.existsSync(
-        aasaPath
-      )
-    ) {
-
+    if (!fs.existsSync(aasaPath)) {
       return res.status(404).json({
         success: false,
-
         message:
           'apple-app-site-association not found',
       });
@@ -239,24 +157,24 @@ app.get(
 // ==================================================
 // QR DEEP LINK
 //
-// ANY FILE NAME IS ACCEPTED
+// QR EXAMPLES:
 //
-// Examples:
+// https://scanqrapi.onrender.com/q/360view.jpg
 //
-// /q/360view.jpg
-// /q/360view.png
-// /q/heart.glb
-// /q/book123.jpeg
-// /q/abc.glb
+// https://scanqrapi.onrender.com/q/360view.png
+//
+// https://scanqrapi.onrender.com/q/heart.glb
+//
+// https://scanqrapi.onrender.com/q/12345.jpg
 //
 // ==================================================
 
 app.get(
-  '/q/:filename',
+  '/q/:id',
   (req, res) => {
 
-    const filename =
-      req.params.filename;
+    const { id } =
+      req.params;
 
     console.log(
       '===================================='
@@ -264,7 +182,12 @@ app.get(
 
     console.log(
       'QR REQUEST:',
-      filename
+      id
+    );
+
+    console.log(
+      'Full URL:',
+      `${BASE_URL}/q/${id}`
     );
 
     console.log(
@@ -281,14 +204,13 @@ app.get(
     // ==================================================
 
     if (
-      filename.includes('/') ||
-      filename.includes('\\') ||
-      filename.includes('..')
+      id.includes('/') ||
+      id.includes('\\') ||
+      id.includes('..')
     ) {
 
       console.log(
-        'Invalid filename:',
-        filename
+        'Invalid QR ID'
       );
 
       return redirectToStore(
@@ -301,67 +223,36 @@ app.get(
     // FILE EXTENSION
     // ==================================================
 
-    const lowerFilename =
-      filename.toLowerCase();
+    const lowerId =
+      id.toLowerCase();
 
     const isJpg =
-      lowerFilename.endsWith(
-        '.jpg'
-      );
+      lowerId.endsWith('.jpg');
 
     const isJpeg =
-      lowerFilename.endsWith(
-        '.jpeg'
-      );
+      lowerId.endsWith('.jpeg');
 
     const isPng =
-      lowerFilename.endsWith(
-        '.png'
-      );
+      lowerId.endsWith('.png');
 
     const isGlb =
-      lowerFilename.endsWith(
-        '.glb'
-      );
+      lowerId.endsWith('.glb');
 
     // ==================================================
-    // SUPPORTED FILE
+    // ALLOWED FILE TYPES
     // ==================================================
 
     if (
-      isJpg ||
-      isJpeg ||
-      isPng ||
-      isGlb
+      !isJpg &&
+      !isJpeg &&
+      !isPng &&
+      !isGlb
     ) {
 
       console.log(
-        'Valid QR file:',
-        filename
+        'Unsupported file type:',
+        id
       );
-
-      // ==================================================
-      // IMPORTANT
-      //
-      // DO NOT REDIRECT TO FILE HERE.
-      //
-      // Universal Links / App Links need to use
-      // this /q/ URL.
-      //
-      // If the app is installed:
-      //
-      // iOS / Android opens Flutter app.
-      //
-      // Flutter receives:
-      //
-      // 360view.jpg
-      //
-      // Flutter then creates:
-      //
-      // https://evergreenpublications.in/
-      // Downloads/demo/360view.jpg
-      //
-      // ==================================================
 
       return redirectToStore(
         req,
@@ -370,85 +261,39 @@ app.get(
     }
 
     // ==================================================
-    // UNSUPPORTED FILE
+    // VALID QR
     // ==================================================
 
     console.log(
-      'Unsupported file:',
-      filename
+      'Valid QR:',
+      id
     );
+
+    // ==================================================
+    // IMPORTANT
+    //
+    // DO NOT send JSON.
+    //
+    // DO NOT send the Evergreen file.
+    //
+    // DO NOT use /models.
+    //
+    // If the application is installed:
+    //
+    // iOS Universal Links / Android App Links
+    // should open the Flutter application BEFORE
+    // this fallback redirect is used.
+    //
+    // If the application is NOT installed:
+    //
+    // browser reaches this route and gets sent
+    // to the appropriate store.
+    // ==================================================
 
     return redirectToStore(
       req,
       res
     );
-  }
-);
-
-// ==================================================
-// FILE INFORMATION API
-//
-// OPTIONAL
-//
-// GET:
-//
-// /file/360view.jpg
-//
-// Response contains Evergreen URL.
-//
-// ==================================================
-
-app.get(
-  '/file/:filename',
-  (req, res) => {
-
-    const filename =
-      req.params.filename;
-
-    // ==================================================
-    // SECURITY
-    // ==================================================
-
-    if (
-      filename.includes('/') ||
-      filename.includes('\\') ||
-      filename.includes('..')
-    ) {
-
-      return res.status(400).json({
-        success: false,
-
-        message:
-          'Invalid filename',
-      });
-    }
-
-    // ==================================================
-    // EVERGREEN URL
-    // ==================================================
-
-    const fileUrl =
-      FILE_BASE_URL +
-      '/' +
-      encodeURIComponent(
-        filename
-      );
-
-    console.log(
-      'File URL:',
-      fileUrl
-    );
-
-    return res.json({
-
-      success: true,
-
-      filename:
-        filename,
-
-      fileUrl:
-        fileUrl,
-    });
   }
 );
 
@@ -541,14 +386,9 @@ app.use(
     );
 
     return res.status(404).json({
-
       success: false,
-
-      message:
-        'Route not found',
-
-      path:
-        req.originalUrl,
+      message: 'Route not found',
+      path: req.originalUrl,
     });
   }
 );
@@ -579,15 +419,7 @@ app.listen(
     );
 
     console.log(
-      `File Base URL: ${FILE_BASE_URL}`
-    );
-
-    console.log(
       'Models folder: NOT USED'
-    );
-
-    console.log(
-      'Well-known folder: USED'
     );
 
     console.log(
