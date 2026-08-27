@@ -114,9 +114,10 @@ app.get('/', (req, res) => {
     message: 'Ever 3D API is running',
 
     files: {
-      modelsFolder: fs.existsSync(
-        modelsPath
-      ),
+      //
+     // modelsFolder: fs.existsSync(
+       // modelsPath
+     // ),
 
       wellKnownFolder: fs.existsSync(
         wellKnownPath
